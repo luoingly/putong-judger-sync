@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from judger.api import app, get_client, get_sandbox_client
+from judger.api import app, get_client
 from judger.models import JudgeStatus, Language, ProblemType, SubmissionResult, TestcaseResult
 
 
@@ -17,7 +17,6 @@ def mock_client():
 @pytest.fixture
 def test_client(mock_client):
     app.dependency_overrides[get_client] = lambda: mock_client
-    app.dependency_overrides[get_sandbox_client] = lambda: mock_client
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()
@@ -62,7 +61,10 @@ def test_judge_accepted(test_client, mock_client):
         )
 
     assert response.status_code == 200
-    assert response.json()["judge"] == JudgeStatus.Accepted
+    data = response.json()
+    assert data["judgeResult"] == "Accepted"
+    assert data["testcases"][0]["judgeResult"] == "Accepted"
+    assert "sid" not in data
 
 
 def test_judge_invalid_language(test_client):
@@ -101,7 +103,7 @@ def test_run_accepted(test_client, mock_client):
 
     assert response.status_code == 200
     data = response.json()
-    assert data["compileStatus"] == "success"
+    assert data["compileStatus"] == "Success"
     assert data["runStatus"] == "Accepted"
     assert data["stdout"] == "42\n"
 
@@ -120,7 +122,7 @@ def test_run_compile_error(test_client, mock_client):
 
     assert response.status_code == 200
     data = response.json()
-    assert data["compileStatus"] == "failed"
+    assert data["compileStatus"] == "Failed"
 
 
 def test_run_invalid_language(test_client):

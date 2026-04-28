@@ -1,6 +1,8 @@
 import logging
+import os
+import random
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field, model_validator
@@ -26,6 +28,31 @@ from .models import (
 
 logger = logging.getLogger(f"{LOGGER_NAME}.api")
 
+# Status mappings
+_JUDGE_STATUS_MAP = {
+    JudgeStatus.Accepted: "Accepted",
+    JudgeStatus.WrongAnswer: "Wrong Answer",
+    JudgeStatus.PresentationError: "Presentation Error",
+    JudgeStatus.TimeLimitExceeded: "Time Limit Exceeded",
+    JudgeStatus.MemoryLimitExceeded: "Memory Limit Exceeded",
+    JudgeStatus.OutputLimitExceeded: "Output Limit Exceeded",
+    JudgeStatus.RuntimeError: "Runtime Error",
+    JudgeStatus.CompileError: "Compile Error",
+    JudgeStatus.SystemError: "System Error",
+    JudgeStatus.Skipped: "Skipped",
+}
+
+_SANDBOX_STATUS_MAP = {
+    SandboxStatus.Accepted: "Accepted",
+    SandboxStatus.TimeLimitExceeded: "Time Limit Exceeded",
+    SandboxStatus.MemoryLimitExceeded: "Memory Limit Exceeded",
+    SandboxStatus.OutputLimitExceeded: "Output Limit Exceeded",
+    SandboxStatus.NonzeroExitStatus: "Runtime Error",
+    SandboxStatus.Signalled: "Runtime Error",
+    SandboxStatus.FileError: "System Error",
+    SandboxStatus.InternalError: "System Error",
+}
+
 
 # Request/Response Models
 class FileInput(BaseModel):
@@ -33,11 +60,11 @@ class FileInput(BaseModel):
     src: Optional[str] = None
     fileId: Optional[str] = None
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_exactly_one(self):
         non_none_count = sum(1 for v in [self.content, self.src, self.fileId] if v is not None)
         if non_none_count != 1:
-            raise ValueError('Exactly one of content, src, or fileId must be provided')
+            raise ValueError("Exactly one of content, src, or fileId must be provided")
         return self
 
 
@@ -67,7 +94,6 @@ class TestcaseRequest(BaseModel):
 
 
 class JudgeRequest(BaseModel):
-    sid: int = Field(..., description="Submission ID")
     timeLimit: int = Field(..., ge=1, description="Time limit in milliseconds")
     memoryLimit: int = Field(..., ge=1, description="Memory limit in kilobytes")
     testcases: list[TestcaseRequest] = Field(..., min_length=1, description="Test cases")
@@ -76,25 +102,25 @@ class JudgeRequest(BaseModel):
     type: int = Field(default=1, description="Problem type enum value")
     additionCode: str = Field(default="", description="Additional code for special judge")
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_language(self):
         try:
             Language(self.language)
         except ValueError:
-            raise ValueError(f'Invalid language value: {self.language}')
+            raise ValueError(f"Invalid language value: {self.language}")
         return self
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_type(self):
         try:
             ProblemType(self.type)
         except ValueError:
-            raise ValueError(f'Invalid problem type value: {self.type}')
+            raise ValueError(f"Invalid problem type value: {self.type}")
         return self
 
     def to_submission(self) -> Submission:
         return Submission(
-            sid=self.sid,
+            sid=random.randint(1, 999999),
             timeLimit=self.timeLimit,
             memoryLimit=self.memoryLimit,
             testcases=[tc.to_testcase() for tc in self.testcases],
@@ -109,38 +135,57 @@ class TestcaseResultResponse(BaseModel):
     uuid: str
     time: int = 0
     memory: int = 0
-    judge: int
+    judgeResult: Literal[
+        "Accepted",
+        "Wrong Answer",
+        "Presentation Error",
+        "Time Limit Exceeded",
+        "Memory Limit Exceeded",
+        "Output Limit Exceeded",
+        "Runtime Error",
+        "Compile Error",
+        "System Error",
+        "Skipped"
+    ]
 
     @classmethod
-    def from_result(cls, result: TestcaseResult) -> 'TestcaseResultResponse':
+    def from_result(cls, result: TestcaseResult) -> "TestcaseResultResponse":
         return cls(
             uuid=result.uuid,
             time=result.time,
             memory=result.memory,
-            judge=result.judge.value
+            judgeResult=_JUDGE_STATUS_MAP[result.judge]
         )
 
 
 class JudgeResponse(BaseModel):
-    sid: int
     time: int = 0
     memory: int = 0
     testcases: list[TestcaseResultResponse]
-    judge: int
-    error: str = ""
+    judgeResult: Literal[
+        "Accepted",
+        "Wrong Answer",
+        "Presentation Error",
+        "Time Limit Exceeded",
+        "Memory Limit Exceeded",
+        "Output Limit Exceeded",
+        "Runtime Error",
+        "Compile Error",
+        "System Error"
+    ]
+    compileError: str = ""
 
     @classmethod
-    def from_result(cls, result: SubmissionResult) -> 'JudgeResponse':
+    def from_result(cls, result: SubmissionResult) -> "JudgeResponse":
         return cls(
-            sid=result.sid,
             time=result.time,
             memory=result.memory,
             testcases=[
                 TestcaseResultResponse.from_result(tc)
                 for tc in result.testcases
             ],
-            judge=result.judge.value,
-            error=result.error
+            judgeResult=_JUDGE_STATUS_MAP[result.judge],
+            compileError=result.error
         )
 
 
@@ -152,19 +197,29 @@ class RunRequest(BaseModel):
     timeLimit: int = Field(default=DEFAULT_TIME_LIMIT // 1_000_000, description="Time limit in milliseconds")
     memoryLimit: int = Field(default=DEFAULT_MEMORY_LIMIT // 1024, description="Memory limit in kilobytes")
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_language(self):
         try:
             Language(self.language)
         except ValueError:
-            raise ValueError(f'Invalid language value: {self.language}')
+            raise ValueError(f"Invalid language value: {self.language}")
         return self
 
 
 class RunResponse(BaseModel):
-    compileStatus: str = Field(..., description="Compilation status: success, failed, or not_needed")
+    compileStatus: Literal["Success", "Failed", "Not Needed"] = Field(
+        ..., description="Compilation status"
+    )
     compileError: str = Field(default="", description="Compilation error output if compilation failed")
-    runStatus: str = Field(..., description="Run status: Accepted, TLE, MLE, RE, etc.")
+    runStatus: Literal[
+        "Accepted",
+        "Time Limit Exceeded",
+        "Memory Limit Exceeded",
+        "Output Limit Exceeded",
+        "Runtime Error",
+        "System Error",
+        "Compile Failed"
+    ] = Field(..., description="Run status")
     exitStatus: int = Field(default=0, description="Process exit status")
     time: int = Field(..., description="Execution time in milliseconds")
     memory: int = Field(..., description="Memory usage in kilobytes")
@@ -182,23 +237,17 @@ def get_client() -> SandboxClient:
     return _client
 
 
-# Dependency injection wrapper for FastAPI
-async def get_sandbox_client() -> SandboxClient:
-    return get_client()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     global _client
-    import os
 
     sandbox_endpoint = os.getenv(
-        'PTOJ_SANDBOX_ENDPOINT',
-        'http://localhost:5050'
+        "PTOJ_SANDBOX_ENDPOINT",
+        "http://localhost:5050"
     )
     _client = SandboxClient(endpoint=sandbox_endpoint)
-    logger.info(f"Connected to sandbox at {sandbox_endpoint}")
+    logger.info("Connected to sandbox at %s", sandbox_endpoint)
 
     yield
 
@@ -217,8 +266,24 @@ app = FastAPI(
 )
 
 
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "name": "Putong OJ Judger API",
+        "version": "2.0.0",
+        "docs": "/docs"
+    }
+
+
+@app.get("/health")
+async def health():
+    """Health check endpoint."""
+    return {"status": "ok"}
+
+
 @app.post("/judge", response_model=JudgeResponse)
-async def judge(request: JudgeRequest, client: SandboxClient = Depends(get_sandbox_client)) -> JudgeResponse:
+async def judge(request: JudgeRequest, client: SandboxClient = Depends(get_client)) -> JudgeResponse:
     """
     Submit code for judging.
 
@@ -236,7 +301,7 @@ async def judge(request: JudgeRequest, client: SandboxClient = Depends(get_sandb
 
     Returns the complete judging result including status for each test case.
     """
-    logger.info(f"Received judge request for submission {request.sid}")
+    logger.info("Received judge request")
 
     try:
         submission = request.to_submission()
@@ -244,42 +309,27 @@ async def judge(request: JudgeRequest, client: SandboxClient = Depends(get_sandb
         result = await judger.get_result()
 
         logger.info(
-            f"Submission {request.sid} completed with status: {result.judge.name}"
+            "Submission %s completed with status: %s",
+            submission.sid, result.judge.name
         )
         return JudgeResponse.from_result(result)
 
     except ValueError as e:
-        logger.error(f"Validation error for submission {request.sid}: {e}")
+        logger.error("Validation error: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Error processing submission {request.sid}: {e}")
+        logger.error("Error processing submission: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Judging failed: {str(e)}"
+            detail="Judging failed: %s" % str(e)
         )
 
 
-@app.get("/health")
-async def health():
-    """Health check endpoint."""
-    return {"status": "ok"}
-
-
-@app.get("/")
-async def root():
-    """Root endpoint with API information."""
-    return {
-        "name": "Putong OJ Judger API",
-        "version": "2.0.0",
-        "docs": "/docs"
-    }
-
-
 @app.post("/run", response_model=RunResponse)
-async def run(request: RunRequest, client: SandboxClient = Depends(get_sandbox_client)) -> RunResponse:
+async def run(request: RunRequest, client: SandboxClient = Depends(get_client)) -> RunResponse:
     """
     Run code directly without judging.
 
@@ -294,20 +344,20 @@ async def run(request: RunRequest, client: SandboxClient = Depends(get_sandbox_c
 
     Returns compilation result, execution status, and program output.
     """
-    logger.info(f"Received run request for language {request.language}")
+    logger.info("Received run request for language %s", request.language)
 
     try:
         lang = Language(request.language)
         lang_config = LanguageRegistry.get_config(lang)
 
         compiled_file = None
-        compile_status = "not_needed"
+        compile_status = "Not Needed"
         compile_error = ""
 
         # Compile if needed
         if lang_config.need_compile:
-            logger.debug(f"Compiling code for language {lang}")
-            compile_status = "success"
+            logger.debug("Compiling code for language %s", lang)
+            compile_status = "Success"
 
             compile_cmd = SandboxCmd(
                 args=lang_config.compile_cmd,
@@ -325,13 +375,13 @@ async def run(request: RunRequest, client: SandboxClient = Depends(get_sandbox_c
             compile_result = (await client.run_command([compile_cmd]))[0]
 
             if compile_result.status != SandboxStatus.Accepted:
-                compile_status = "failed"
+                compile_status = "Failed"
                 compile_error = compile_result.files.get("stderr", "")
 
                 return RunResponse(
                     compileStatus=compile_status,
                     compileError=compile_error,
-                    runStatus="compile_failed",
+                    runStatus="Compile Failed",
                     exitStatus=compile_result.exitStatus,
                     time=0,
                     memory=0,
@@ -345,7 +395,7 @@ async def run(request: RunRequest, client: SandboxClient = Depends(get_sandbox_c
             logger.debug("Compilation successful")
 
         # Run the code
-        logger.debug(f"Running code for language {lang}")
+        logger.debug("Running code for language %s", lang)
         timeLimit = 1_000_000 * request.timeLimit * lang_config.time_factor
         memoryLimit = 1024 * request.memoryLimit * lang_config.memory_factor
 
@@ -375,38 +425,25 @@ async def run(request: RunRequest, client: SandboxClient = Depends(get_sandbox_c
         stdout = run_result.files.get("stdout", "") if run_result.files else ""
         stderr = run_result.files.get("stderr", "") if run_result.files else ""
 
-        # Determine run status
-        if run_result.status == SandboxStatus.Accepted:
-            run_status = "Accepted"
-        elif run_result.status == SandboxStatus.TimeLimitExceeded:
-            run_status = "TLE"
-        elif run_result.status == SandboxStatus.MemoryLimitExceeded:
-            run_status = "MLE"
-        elif run_result.status == SandboxStatus.OutputLimitExceeded:
-            run_status = "OLE"
-        elif run_result.status == SandboxStatus.NonzeroExitStatus:
-            run_status = "RE"
-        elif run_result.status == SandboxStatus.Signalled:
-            run_status = "RE"
-        else:
-            run_status = "SE"
+        # Map SandboxStatus to run status string
+        run_status_str = _SANDBOX_STATUS_MAP.get(run_result.status, "System Error")
 
         time_ms = min(run_result.time, timeLimit) // 1_000_000
         memory_kb = min(run_result.memory, memoryLimit) // 1024
 
-        logger.info(f"Run completed with status: {run_status}")
+        logger.info("Run completed with status: %s", run_status_str)
 
         # Cleanup compiled file
         if compiled_file:
             try:
                 await client.delete_file(compiled_file.fileId)
             except Exception as e:
-                logger.warning(f"Failed to delete compiled file: {e}")
+                logger.warning("Failed to delete compiled file: %s", e)
 
         return RunResponse(
             compileStatus=compile_status,
             compileError=compile_error,
-            runStatus=run_status,
+            runStatus=run_status_str,
             exitStatus=run_result.exitStatus,
             time=time_ms,
             memory=memory_kb,
@@ -415,14 +452,14 @@ async def run(request: RunRequest, client: SandboxClient = Depends(get_sandbox_c
         )
 
     except ValueError as e:
-        logger.error(f"Validation error for run request: {e}")
+        logger.error("Validation error for run request: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Error processing run request: {e}")
+        logger.error("Error processing run request: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Run failed: {str(e)}"
+            detail="Run failed: %s" % str(e)
         )

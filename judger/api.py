@@ -290,7 +290,6 @@ async def judge(request: JudgeRequest, client: SandboxClient = Depends(get_clien
     This endpoint synchronously executes the submitted code against all test cases
     and returns the complete result.
 
-    - **sid**: Unique submission identifier
     - **timeLimit**: Time limit per test case (milliseconds)
     - **memoryLimit**: Memory limit per test case (kilobytes)
     - **testcases**: List of test cases with input/output
@@ -320,11 +319,11 @@ async def judge(request: JudgeRequest, client: SandboxClient = Depends(get_clien
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    except Exception as e:
-        logger.error("Error processing submission: %s", e)
+    except Exception:
+        logger.exception("Error processing submission")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Judging failed: %s" % str(e)
+            detail="Internal server error during judging"
         )
 
 
@@ -457,9 +456,9 @@ async def run(request: RunRequest, client: SandboxClient = Depends(get_client)) 
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    except Exception as e:
-        logger.error("Error processing run request: %s", e)
+    except Exception:
+        logger.exception("Error processing run request")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Run failed: %s" % str(e)
+            detail="Internal server error during code execution"
         )

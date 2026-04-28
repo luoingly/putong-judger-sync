@@ -1,14 +1,13 @@
-import asyncio
 import logging
 import os
-import signal
-import sys
 from typing import Optional
 
+import uvicorn
 from rich.logging import RichHandler
 from rich.traceback import install as install_traceback
 
-from judger import Scheduler, LOGGER_NAME
+from judger import LOGGER_NAME
+from judger.api import app
 
 
 def setup_logger(
@@ -33,20 +32,20 @@ def setup_logger(
         logger.addHandler(file_handler)
 
 
-async def main():
+def main():
     install_traceback()
 
-    redis_url: str = os.getenv(
-        'PTOJ_REDIS_URL',
-        'redis://localhost:6379'
-    )
     sandbox_endpoint: str = os.getenv(
         'PTOJ_SANDBOX_ENDPOINT',
         'http://localhost:5050'
     )
-    init_concurrent: int = int(os.getenv(
-        'PTOJ_INIT_CONCURRENT',
-        '1'
+    host: str = os.getenv(
+        'PTOJ_HOST',
+        '0.0.0.0'
+    )
+    port: int = int(os.getenv(
+        'PTOJ_PORT',
+        '8000'
     ))
     log_file: Optional[str] = os.getenv(
         'PTOJ_LOG_FILE',
@@ -58,35 +57,20 @@ async def main():
 
     logger = logging.getLogger(f"{LOGGER_NAME}.main")
     logger.info(
-        "Starting with "
-        f"redis_url={redis_url}, "
+        "Starting HTTP server with "
         f"sandbox_endpoint={sandbox_endpoint}, "
-        f"init_concurrent={init_concurrent}, "
+        f"host={host}, "
+        f"port={port}, "
         f"log_file='{log_file}'"
     )
 
-    scheduler = Scheduler(
-        redis_url=redis_url,
-        sandbox_endpoint=sandbox_endpoint,
-        init_concurrent=init_concurrent
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_config=None  # Use our custom logger
     )
-    scheduler.start()
 
-    loop = asyncio.get_running_loop()
-
-    if sys.platform == 'linux':
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(
-                sig,
-                lambda: asyncio.create_task(scheduler.stop())
-            )
-    try:
-        await scheduler.wait()
-    except asyncio.CancelledError:
-        await scheduler.stop()
-        raise
-    finally:
-        logger.info("Scheduler stopped")
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()

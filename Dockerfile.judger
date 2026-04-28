@@ -1,12 +1,15 @@
 FROM python:3.11-slim
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+RUN uvx pip install --system uv
+
+COPY pyproject.toml .
+RUN uv sync --frozen --no-dev
 
 COPY judger ./judger
 COPY main.py .
 
-RUN mkdir /app/logs
+EXPOSE 8000
 
-CMD ["python", "main.py"]
+CMD ["uv", "run", "python", "main.py"]

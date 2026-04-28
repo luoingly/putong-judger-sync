@@ -1,11 +1,17 @@
-# Putong OJ - Judger
+# Putong OJ - Judger API
 
 ![Python](https://img.shields.io/badge/python-%3E%3D3.11-3572a5)
 [![Test Status](https://img.shields.io/github/actions/workflow/status/net-escape/ptoj-judger/ci.yml?label=test)](https://github.com/net-escape/ptoj-judger/actions/workflows/ci.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/net-escape/ptoj-judger/main)](https://app.codecov.io/github/net-escape/ptoj-judger)
 [![GitHub License](https://img.shields.io/github/license/net-escape/ptoj-judger)](https://github.com/net-escape/ptoj-judger/blob/main/LICENSE)
 
-This is a Judger for the [Putong OJ](https://github.com/net-escape/ptoj-backend) platform, designed to evaluate submitted code in programming contests and algorithmic problem-solving. It works with the [go-judge](https://github.com/criyle/go-judge) secure sandbox to provide a secure and efficient code execution environment.
+A synchronous HTTP API for code execution and judging, designed for programming contest platforms and online judges. It securely executes submitted code using the [go-judge](https://github.com/criyle/go-judge) sandbox.
+
+## API Endpoints
+
+- `GET /` - API information
+- `GET /health` - Health check
+- `GET /docs` - Interactive API documentation (Swagger UI)
 
 ## Getting Started 🚀
 
@@ -17,53 +23,39 @@ Additionally, you need to have a running instance of [Putong OJ](https://github.
 
 ### Build and Run
 
-#### Build Docker Images
-
-Run the following commands to build the necessary Docker images:
-
+1. **Build and start the sandbox:**
 ```bash
-docker build -t ptoj-sandbox -f Dockerfile.sandbox .
-docker build -t ptoj-judger -f Dockerfile.judger .
+docker build . -f Dockerfile.sandbox -t go-judge
+docker run -d --privileged -p 5050:5050 --name go-judge go-judge
 ```
 
-#### Run the Judger
-
-Replace `<YOUR_REDIS_URL>` and `<PROBLEM_DATA_PATH>` with your actual configurations:
-
-```yaml
-services:
-  ptoj-sandbox:
-    image: ptoj-sandbox
-    volumes:
-      - <PROBLEM_DATA_PATH>:/app/data:ro
-    privileged: true
-    networks:
-      - internal
-
-  ptoj-judger:
-    image: ptoj-judger
-    environment:
-      - PTOJ_REDIS_URL=<YOUR_REDIS_URL>
-      - PTOJ_SANDBOX_ENDPOINT=http://ptoj-sandbox:5050
-    networks:
-      - internal
-
-networks:
-  internal:
-    driver: bridge
+2. **Run the judger API:**
+```bash
+docker build . -f Dockerfile.judger -t ptoj-judger
+docker run -d -p 8000:8000 \
+  -e PTOJ_SANDBOX_ENDPOINT=http://host.docker.internal:5050 \
+  --name ptoj-judger \
+  ptoj-judger
 ```
+
+### Local Development
+
+1. **Install dependencies:**
+```bash
+pip install uv
+uv sync --all-extras
+```
+
 
 ### Environment Variables
 
-The following environment variables are available for configuration:
-
-| Variable                | Description                  | Default                  |
-| ----------------------- | ---------------------------- | ------------------------ |
-| `PTOJ_REDIS_URL`        | Redis connection URL         | `redis://localhost:6379` |
-| `PTOJ_SANDBOX_ENDPOINT` | Sandbox endpoint URL         | `http://localhost:5050`  |
-| `PTOJ_INIT_CONCURRENT`  | Initial concurrent processes | `1`                      |
-| `PTOJ_LOG_FILE`         | Log file path                | `judger.log`             |
-| `PTOJ_DEBUG`            | Debug mode (0/1)             | `1`                      |
+| Variable                | Description          | Default                 |
+| ----------------------- | -------------------- | ----------------------- |
+| `PTOJ_SANDBOX_ENDPOINT` | Sandbox endpoint URL | `http://localhost:5050` |
+| `PTOJ_HOST`             | API server host      | `0.0.0.0`               |
+| `PTOJ_PORT`             | API server port      | `8000`                  |
+| `PTOJ_LOG_FILE`         | Log file path        | `judger.log`            |
+| `PTOJ_DEBUG`            | Debug mode (0/1)     | `1`                     |
 
 ## Development 🛠️
 
@@ -72,20 +64,21 @@ The following environment variables are available for configuration:
 Install the required dependencies:
 
 ```bash
-pip install -r requirements.txt
+uv sync --all-extras
 ```
 
 ### Running the Judger Locally
 
-Refer to [example.py](example.py) and [main.py](main.py) for more details on usage.
+```bash
+uv run python main.py
+```
 
 ### Testing
 
 Run the following command to execute the test suite:
 
 ```bash
-pip install pytest pytest-asyncio pytest-cov
-pytest --cov=judger
+uv run pytest --cov=judger
 ```
 
 For more details, check the [tests](tests) directory.

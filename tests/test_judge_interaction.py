@@ -1,7 +1,8 @@
+import os
 import pytest
 from judger import *
 
-endpoint = 'http://localhost:5050'
+endpoint = os.getenv('PTOJ_SANDBOX_ENDPOINT', 'http://localhost:5050')
 
 testcases = [
     Testcase(

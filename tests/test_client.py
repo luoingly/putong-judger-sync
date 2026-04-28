@@ -1,9 +1,10 @@
 import asyncio
+import os
 import pytest
 from judger.models import PreparedFile
 from judger.client import SandboxClient, FileCache
 
-endpoint = 'http://localhost:5050'
+endpoint = os.getenv('PTOJ_SANDBOX_ENDPOINT', 'http://localhost:5050')
 
 file_content = \
     "In the intricate dance of algorithms and the language of programming, " + \

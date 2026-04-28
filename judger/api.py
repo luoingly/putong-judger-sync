@@ -218,7 +218,7 @@ app = FastAPI(
 
 
 @app.post("/judge", response_model=JudgeResponse)
-async def judge(request: JudgeRequest) -> JudgeResponse:
+async def judge(request: JudgeRequest, client: SandboxClient = Depends(get_sandbox_client)) -> JudgeResponse:
     """
     Submit code for judging.
 
@@ -240,7 +240,7 @@ async def judge(request: JudgeRequest) -> JudgeResponse:
 
     try:
         submission = request.to_submission()
-        judger = Judger(client=get_client(), submission=submission)
+        judger = Judger(client=client, submission=submission)
         result = await judger.get_result()
 
         logger.info(

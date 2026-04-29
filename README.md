@@ -1,87 +1,119 @@
-# Putong OJ - Judger API
+# Putong AI Overseer
 
-![Python](https://img.shields.io/badge/python-%3E%3D3.11-3572a5)
-[![Test Status](https://img.shields.io/github/actions/workflow/status/net-escape/ptoj-judger/ci.yml?label=test)](https://github.com/net-escape/ptoj-judger/actions/workflows/ci.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/net-escape/ptoj-judger/main)](https://app.codecov.io/github/net-escape/ptoj-judger)
-[![GitHub License](https://img.shields.io/github/license/net-escape/ptoj-judger)](https://github.com/net-escape/ptoj-judger/blob/main/LICENSE)
-
-A synchronous HTTP API for code execution and judging, designed for programming contest platforms and online judges. It securely executes submitted code using the [go-judge](https://github.com/criyle/go-judge) sandbox.
-
-## API Endpoints
-
-- `GET /` - API information
-- `GET /health` - Health check
-- `GET /docs` - Interactive API documentation (Swagger UI)
+A CLI tool for evaluating AI models' ability to solve algorithm problems via Virtual Judge. It securely executes submitted code using the [go-judge](https://github.com/criyle/go-judge) sandbox.
 
 ## Getting Started 🚀
 
 ### Prerequisites
 
-Ensure that you have the [Docker](https://www.docker.com/) installed on your server.
+Ensure that you have [Docker](https://www.docker.com/) installed on your server.
 
-Additionally, you need to have a running instance of [Putong OJ](https://github.com/net-escape/ptoj-backend).
+Additionally, install the required dependencies:
+
+```bash
+pip install uv
+uv sync
+```
+
+### Configure Settings
+
+Create `data/models.yaml` with your AI model credentials:
+
+```yaml
+models:
+  - name: "your-model"
+    base_url: "https://api.example.com"
+    api_key: "sk-..."
+    temperature: 0.2
+    max_tokens: 4096
+```
 
 ### Build and Run
 
-1. **Build and start the sandbox:**
+#### Build Docker Images
+
+Run the following commands to build and start the sandbox:
+
 ```bash
 docker build . -f Dockerfile.sandbox -t go-judge
 docker run -d --privileged -p 5050:5050 --name go-judge go-judge
 ```
 
-2. **Run the judger API:**
+#### Run the Overseer
+
 ```bash
-docker build . -f Dockerfile.judger -t ptoj-judger
-docker run -d -p 8000:8000 \
-  -e PTOJ_SANDBOX_ENDPOINT=http://host.docker.internal:5050 \
-  --name ptoj-judger \
-  ptoj-judger
+# Single model, single problem
+uv run python run.py --model your-model --problem a-plus-b --language python
+
+# Multiple models comparison
+uv run python run.py --model gpt-4o --model claude-sonnet --problem a-plus-b --language python
+
+# Multiple problems
+uv run python run.py --model your-model --problem a-plus-b --problem two-sum --language cpp17
+
+# Tool agent (multi-turn with tool calling)
+uv run python run.py --model your-model --problem a-plus-b --language python --agent tool
 ```
 
-### Local Development
+### CLI Options
 
-1. **Install dependencies:**
-```bash
-pip install uv
-uv sync --all-extras
+| Option           | Description                                          | Default                 |
+| ---------------- | ---------------------------------------------------- | ----------------------- |
+| `--model`        | Model name (from config), repeatable                 | required                |
+| `--problem`      | Problem ID, repeatable                               | required                |
+| `--language`     | `c` / `cpp11` / `cpp17` / `java` / `python` / `pypy` | required                |
+| `--agent`        | `simple` (single-turn) or `tool` (multi-turn)        | `simple`                |
+| `--sandbox`      | Sandbox endpoint                                     | `http://localhost:5050` |
+| `--max-turns`    | Max turns for tool agent                             | `10`                    |
+| `--config`       | Models config file                                   | `data/models.yaml`      |
+| `--problems-dir` | Problems directory                                   | `data/problems`         |
+
+## Problem Format 📝
+
+Each problem is a directory under `data/problems/`:
+
+```text
+data/problems/a-plus-b/
+├── problem.yaml       # Constraints
+├── description.md     # Problem statement
+├── addition.cpp       # [Optional] For interaction/special-judge
+└── tests/
+    ├── sample-1.in
+    ├── sample-1.out
+    └── ...
 ```
 
+**problem.yaml:**
 
-### Environment Variables
+```yaml
+title: "A + B Problem"
+source: "Example"
+constraints:
+  timeLimit: 1000       # ms
+  memoryLimit: 32768    # KB
+  problemType: traditional  # traditional / interaction / special-judge
+```
 
-| Variable                | Description          | Default                 |
-| ----------------------- | -------------------- | ----------------------- |
-| `PTOJ_SANDBOX_ENDPOINT` | Sandbox endpoint URL | `http://localhost:5050` |
-| `PTOJ_HOST`             | API server host      | `0.0.0.0`               |
-| `PTOJ_PORT`             | API server port      | `8000`                  |
-| `PTOJ_LOG_FILE`         | Log file path        | `judger.log`            |
-| `PTOJ_DEBUG`            | Debug mode (0/1)     | `1`                     |
+Test cases are auto-discovered by matching `*.in` / `*.out` pairs in `tests/`.
+
+For `interaction` or `special-judge` type, place `addition.cpp` in the problem directory.
+
+## Output 📊
+
+Each run saves results to `data/records/{timestamp}/`:
+
+- `{model}__{problem}.json` — Full record with conversation trace, tool calls, token usage, and judge details
+- `run.yaml` — Summary of all results
 
 ## Development 🛠️
 
-### Prerequisites
-
-Install the required dependencies:
+Run the following commands to lint and format code:
 
 ```bash
-uv sync --all-extras
+# Lint & format
+uv run ruff check --fix
+uv run ruff format
 ```
-
-### Running the Judger Locally
-
-```bash
-uv run python main.py
-```
-
-### Testing
-
-Run the following command to execute the test suite:
-
-```bash
-uv run pytest --cov=judger
-```
-
-For more details, check the [tests](tests) directory.
 
 ## License 📜
 

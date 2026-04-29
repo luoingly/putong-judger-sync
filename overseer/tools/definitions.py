@@ -2,10 +2,7 @@ from overseer.provider import ToolDef
 
 READ_PROBLEM = ToolDef(
     name="read_problem",
-    description=(
-        "Read the full problem description, constraints, "
-        "and sample test cases for the current problem."
-    ),
+    description=("Read the full problem description and constraints for the current problem."),
     parameters={
         "type": "object",
         "properties": {},

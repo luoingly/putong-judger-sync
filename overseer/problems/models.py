@@ -22,10 +22,10 @@ class TestCaseData:
     output_path: Path
 
     def read_input(self) -> str:
-        return self.input_path.read_text()
+        return self.input_path.read_text(encoding="utf-8")
 
     def read_output(self) -> str:
-        return self.output_path.read_text()
+        return self.output_path.read_text(encoding="utf-8")
 
 
 @dataclass
@@ -43,12 +43,12 @@ class Problem:
 
     def read_description(self) -> str:
         if self.description_path and self.description_path.exists():
-            return self.description_path.read_text()
+            return self.description_path.read_text(encoding="utf-8")
         return ""
 
     def read_addition_code(self) -> str:
         if self.addition_code_path and self.addition_code_path.exists():
-            return self.addition_code_path.read_text()
+            return self.addition_code_path.read_text(encoding="utf-8")
         return ""
 
     def read_test_input(self, uuid: str) -> str:

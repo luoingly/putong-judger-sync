@@ -22,7 +22,7 @@ class ProblemLoader:
         if not yaml_path.exists():
             raise FileNotFoundError(f"problem.yaml not found in {problem_dir}")
 
-        with open(yaml_path) as f:
+        with open(yaml_path, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
 
         title = data.get("title", problem_id)

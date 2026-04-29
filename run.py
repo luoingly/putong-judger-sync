@@ -84,7 +84,7 @@ def load_model_configs(config_path: str) -> dict[str, ProviderConfig]:
     if not path.exists():
         console.print(f"[red]Config file not found: {config_path}[/red]")
         sys.exit(1)
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
     if not data.get("models"):
         console.print(f"[red]No models found in {config_path}[/red]")

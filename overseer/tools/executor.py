@@ -38,37 +38,37 @@ class ToolExecutor:
         }
         handler = handlers.get(tool_name)
         if not handler:
-            return f"Error: Unknown tool '{tool_name}'"
+            return f"错误：未知的工具 '{tool_name}'"
         try:
             return await handler(arguments)
         except Exception as e:
             logger.exception("Tool '%s' execution failed", tool_name)
-            return f"Error executing {tool_name}: {e}"
+            return f"工具 {tool_name} 执行出错：{e}"
 
     async def _read_problem(self, args: dict[str, Any]) -> str:
         statement = self.problem.read_statement()
         constraints = self.problem.constraints
         result = statement
-        result += "\n\n## Constraints\n"
-        result += f"- Time Limit: {constraints.timeLimit}ms\n"
-        result += f"- Memory Limit: {constraints.memoryLimit}KB\n"
-        result += f"- Problem Type: {constraints.problemType.name}\n"
-        result += f"\n## Language: {self.language.name}\n"
+        result += "\n\n## 限制条件\n"
+        result += f"- 时间限制：{constraints.timeLimit}ms\n"
+        result += f"- 内存限制：{constraints.memoryLimit}KB\n"
+        result += f"- 题目类型：{constraints.problemType.name}\n"
+        result += f"\n## 编程语言：{self.language.name}\n"
         return result
 
     async def _submit_code(self, args: dict[str, Any]) -> str:
         code = args.get("code", "")
         if not code:
-            return "Error: No code provided"
+            return "错误：未提供代码"
 
         submission = build_submission(self.problem, code, self.language)
         judger = Judger(client=self.sandbox, submission=submission)
         result = await judger.get_result()
 
-        lines = [f"Result: {result.judge.name}"]
+        lines = [f"评测结果：{result.judge.name}"]
         if result.error:
-            lines.append(f"Error: {result.error}")
-        lines.append(f"Time: {result.time}ms | Memory: {result.memory}KB")
+            lines.append(f"错误信息：{result.error}")
+        lines.append(f"用时：{result.time}ms | 内存：{result.memory}KB")
         lines.append("")
         for tc in result.testcases:
             status = _status_icon(tc.judge.name)
@@ -79,7 +79,7 @@ class ToolExecutor:
         code = args.get("code", "")
         input_data = args.get("input", "")
         if not code:
-            return "Error: No code provided"
+            return "错误：未提供代码"
 
         lang_config = LanguageRegistry.get_config(self.language)
         constraints = self.problem.constraints
@@ -95,11 +95,11 @@ class ToolExecutor:
             compile_result = (await self.sandbox.run_command([compile_cmd]))[0]
             if compile_result.status != SandboxStatus.Accepted:
                 stderr = (compile_result.files or {}).get("stderr", "")
-                return f"Compile Error:\n{stderr}"
+                return f"编译错误：\n{stderr}"
 
             compiled_id = (compile_result.fileIds or {}).get(lang_config.compiled_filename)
             if not compiled_id:
-                return "Compile Error: compiled file not found in sandbox response"
+                return "编译错误：未在沙箱响应中找到编译产物"
             run_copy_in = {lang_config.compiled_filename: PreparedFile(compiled_id)}
         else:
             run_copy_in = {lang_config.source_filename: MemoryFile(code)}
@@ -127,13 +127,13 @@ class ToolExecutor:
         stdout = files.get("stdout", "")
         stderr = files.get("stderr", "")
         lines = [
-            f"Status: {run_result.status.value}",
-            f"Time: {run_result.time // 1_000_000}ms | Memory: {run_result.memory // 1024}KB",
+            f"运行状态：{run_result.status.value}",
+            f"用时：{run_result.time // 1_000_000}ms | 内存：{run_result.memory // 1024}KB",
         ]
         if stdout:
-            lines.append(f"\n--- stdout ---\n{stdout}")
+            lines.append(f"\n--- 标准输出 ---\n{stdout}")
         if stderr:
-            lines.append(f"\n--- stderr ---\n{stderr}")
+            lines.append(f"\n--- 标准错误 ---\n{stderr}")
         return "\n".join(lines)
 
 

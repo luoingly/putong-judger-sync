@@ -30,18 +30,8 @@ class AgentResult:
 
 
 SYSTEM_PROMPT = """\
-You are a competitive programmer solving algorithm problems. \
-You have access to tools that let you read problems, run code, and submit solutions.
-
-Strategy:
-1. First, use `read_problem` to understand the problem.
-2. Think about the solution approach.
-3. Use `run_code` to test your approach with sample inputs if needed.
-4. Use `submit_code` to submit your final solution.
-5. If the result is Wrong Answer, analyze the feedback, fix your code, and resubmit.
-
-Important: When using `submit_code` or `run_code`, \
-the language is already set to {language}. You do not need to specify it.
+你是一名竞赛选手，正在解答算法题目。\
+你可以使用工具来阅读题目、运行代码和提交解答。
 """
 
 
@@ -127,7 +117,7 @@ class ToolAgent:
         system_prompt = SYSTEM_PROMPT.format(language=self.language_name)
         messages = [
             Message(role="system", content=system_prompt),
-            Message(role="user", content=f"Solve problem: {problem.id}"),
+            Message(role="user", content=f"请开始，阅读题目并解答。"),
         ]
         conversation = [_message_to_record(m) for m in messages]
 

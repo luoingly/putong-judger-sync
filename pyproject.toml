@@ -1,21 +1,15 @@
 [project]
-name = "putong-judger-sync"
-version = "2.0.0"
-description = "Putong OJ Judger - Synchronous HTTP API"
+name = "putong-ai-overseer"
+version = "3.0.0"
+description = "AI algorithm problem evaluation tool with virtual judge"
 requires-python = ">=3.11"
 dependencies = [
     "aiohttp>=3.11.13",
-    "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.32.0",
     "rich>=13.9.4",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.24.0",
-    "pytest-cov>=6.0.0",
-    "httpx>=0.27.0",
+    "openai>=1.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "ruff>=0.11.0",
 ]
 
 [build-system]
@@ -23,10 +17,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["judger"]
+packages = ["judger", "overseer"]
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-asyncio_default_fixture_loop_scope = "function"
-python_classes = "PyTest"
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]

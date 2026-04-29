@@ -85,7 +85,10 @@ def load_model_configs(config_path: str) -> dict[str, ProviderConfig]:
         console.print(f"[red]Config file not found: {config_path}[/red]")
         sys.exit(1)
     with open(path) as f:
-        data = yaml.safe_load(f)
+        data = yaml.safe_load(f) or {}
+    if not data.get("models"):
+        console.print(f"[red]No models found in {config_path}[/red]")
+        sys.exit(1)
     configs = {}
     for m in data.get("models", []):
         configs[m["name"]] = ProviderConfig.from_dict(m)
@@ -131,9 +134,9 @@ async def run_one(
     judge_result = None
     if agent_result.status == AgentStatus.Completed and agent_result.code:
         from judger.judger import Judger
-        from overseer.tools.executor import _build_submission
+        from overseer.tools.executor import build_submission
 
-        submission = _build_submission(problem, agent_result.code, language)
+        submission = build_submission(problem, agent_result.code, language)
         judger = Judger(client=sandbox_client, submission=submission)
         judge_result = await judger.get_result()
 

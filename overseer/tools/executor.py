@@ -71,7 +71,7 @@ class ToolExecutor:
         if not code:
             return "Error: No code provided"
 
-        submission = _build_submission(self.problem, code, self.language)
+        submission = build_submission(self.problem, code, self.language)
         judger = Judger(client=self.sandbox, submission=submission)
         result = await judger.get_result()
 
@@ -106,7 +106,9 @@ class ToolExecutor:
                 stderr = (compile_result.files or {}).get("stderr", "")
                 return f"Compile Error:\n{stderr}"
 
-            compiled_id = (compile_result.fileIds or {})[lang_config.compiled_filename]
+            compiled_id = (compile_result.fileIds or {}).get(lang_config.compiled_filename)
+            if not compiled_id:
+                return "Compile Error: compiled file not found in sandbox response"
             run_copy_in = {lang_config.compiled_filename: PreparedFile(compiled_id)}
         else:
             run_copy_in = {lang_config.source_filename: MemoryFile(code)}
@@ -121,7 +123,6 @@ class ToolExecutor:
             memoryLimit=memoryLimit,
             files=[MemoryFile(input_data), Collector("stdout"), Collector("stderr")],
             copyIn=run_copy_in,
-            copyOutCached=["stdout", "stderr"],
         )
         run_result = (await self.sandbox.run_command([run_cmd]))[0]
 
@@ -157,7 +158,7 @@ class ToolExecutor:
         return f"{run_result}\n\n--- Expected Output ---\n{expected}"
 
 
-def _build_submission(problem: Problem, code: str, language: Language) -> Submission:
+def build_submission(problem: Problem, code: str, language: Language) -> Submission:
     testcases = []
     for tc in problem.testcases:
         testcases.append(

@@ -29,7 +29,18 @@ class AgentResult:
     error: str | None = None
 
 
-SYSTEM_PROMPT = """\
+SIMPLE_SYSTEM_PROMPT = """\
+你是一名竞赛选手。请解答给定的算法题目。
+
+将你的解答放在带有语言标识符的代码块中输出，例如：
+```python
+# 你的代码
+```
+
+只输出一个代码块，不要在代码块之后输出其他内容。
+"""
+
+TOOL_SYSTEM_PROMPT = """\
 你是一名竞赛选手，正在解答算法题目。\
 你可以使用工具来阅读题目、运行代码和提交解答。
 """
@@ -91,6 +102,60 @@ def _response_to_record(resp: AIResponse, model: str | None = None) -> dict[str,
     return record
 
 
+class SimpleAgent:
+    def __init__(self, language_name: str):
+        self.language_name = language_name
+
+    async def solve(self, problem: Problem, provider: Any) -> AgentResult:
+        statement = problem.read_statement()
+        user_content = (
+            f"请使用 {self.language_name} 解答以下题目。\n\n"
+            f"{statement}\n\n"
+            f"请将解答放在 ```{self.language_name} 代码块中。"
+        )
+        messages = [
+            Message(role="system", content=SIMPLE_SYSTEM_PROMPT),
+            Message(role="user", content=user_content),
+        ]
+        conversation = [_message_to_record(m) for m in messages]
+
+        try:
+            response: AIResponse = await provider.complete(messages)
+        except Exception as e:
+            logger.exception("SimpleAgent: provider call failed")
+            return AgentResult(
+                status=AgentStatus.Failed,
+                error=str(e),
+                conversation=conversation,
+            )
+
+        conversation.append(_response_to_record(response, provider.config.name))
+
+        total_usage = response.usage or Usage()
+        code = _extract_code(response.content, self.language_name) or _extract_code(
+            response.content
+        )
+
+        if code is None:
+            logger.warning("SimpleAgent: failed to extract code from response")
+            return AgentResult(
+                status=AgentStatus.Failed,
+                token_usage=total_usage,
+                turn_count=1,
+                conversation=conversation,
+                error="Failed to extract code from model response",
+            )
+
+        return AgentResult(
+            status=AgentStatus.Completed,
+            code=code,
+            language=self.language_name,
+            token_usage=total_usage,
+            turn_count=1,
+            conversation=conversation,
+        )
+
+
 class ToolAgent:
     def __init__(
         self,
@@ -114,10 +179,10 @@ class ToolAgent:
                 conversation=[],
             )
 
-        system_prompt = SYSTEM_PROMPT.format(language=self.language_name)
+        system_prompt = TOOL_SYSTEM_PROMPT.format(language=self.language_name)
         messages = [
             Message(role="system", content=system_prompt),
-            Message(role="user", content=f"请开始，阅读题目并解答。"),
+            Message(role="user", content="请开始，阅读题目并解答。"),
         ]
         conversation = [_message_to_record(m) for m in messages]
 

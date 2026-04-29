@@ -31,8 +31,7 @@ SUBMIT_CODE = ToolDef(
 RUN_CODE = ToolDef(
     name="run_code",
     description=(
-        "使用自定义输入运行代码，不进行评测。"
-        "适合调试使用。返回标准输出、标准错误和运行状态。"
+        "使用自定义输入运行代码，不进行评测。适合调试使用。返回标准输出、标准错误和运行状态。"
     ),
     parameters={
         "type": "object",

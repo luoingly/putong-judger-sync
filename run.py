@@ -12,7 +12,7 @@ from rich.logging import RichHandler
 
 from judger.client import SandboxClient
 from judger.models import Language
-from overseer.agent import AgentResult, AgentStatus, ToolAgent
+from overseer.agent import AgentResult, AgentStatus, SimpleAgent, ToolAgent
 from overseer.problems.registry import ProblemRegistry
 from overseer.provider import AIProvider, ProviderConfig
 from overseer.recorder import Recorder
@@ -54,6 +54,12 @@ def parse_args():
         required=True,
         choices=list(LANGUAGE_MAP.keys()),
         help="Programming language for the solution.",
+    )
+    parser.add_argument(
+        "--agent",
+        default="tool",
+        choices=["simple", "tool"],
+        help="Agent type: simple (single-turn) or tool (multi-turn, default: tool).",
     )
     parser.add_argument(
         "--sandbox",
@@ -100,6 +106,7 @@ async def run_one(
     problem_id: str,
     language: Language,
     language_name: str,
+    agent_type: str,
     max_turns: int,
     provider: AIProvider,
     sandbox_client: SandboxClient,
@@ -112,20 +119,23 @@ async def run_one(
         f"[bold]Problem:[/bold] {problem_id} | "
         f"[bold]Language:[/bold] {language_name}"
     )
+    console.print(f"[bold]Agent:[/bold] {agent_type}")
 
     problem = problem_registry.get(problem_id)
 
-    tool_executor = ToolExecutor(
-        problem=problem,
-        sandbox_client=sandbox_client,
-        language=language,
-    )
-
-    agent = ToolAgent(
-        language_name=language_name,
-        max_turns=max_turns,
-        tool_executor=tool_executor,
-    )
+    if agent_type == "simple":
+        agent = SimpleAgent(language_name=language_name)
+    else:
+        tool_executor = ToolExecutor(
+            problem=problem,
+            sandbox_client=sandbox_client,
+            language=language,
+        )
+        agent = ToolAgent(
+            language_name=language_name,
+            max_turns=max_turns,
+            tool_executor=tool_executor,
+        )
 
     start = time.time()
     agent_result: AgentResult = await agent.solve(problem, provider)
@@ -232,6 +242,7 @@ async def async_main():
                     problem_id=problem_id,
                     language=language,
                     language_name=args.language,
+                    agent_type=args.agent,
                     max_turns=args.max_turns,
                     provider=provider,
                     sandbox_client=sandbox_client,

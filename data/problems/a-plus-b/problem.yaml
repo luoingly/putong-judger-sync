@@ -1,0 +1,6 @@
+title: "A + B Problem"
+source: "Example"
+constraints:
+  timeLimit: 1000
+  memoryLimit: 32768
+  problemType: traditional

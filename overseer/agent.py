@@ -133,10 +133,11 @@ class ToolAgent:
 
         total_usage = Usage()
         last_code: str | None = None
+        response: AIResponse | None = None
 
         for turn in range(self.max_turns):
             try:
-                response: AIResponse = await provider.complete(messages, tools=ALL_TOOLS)
+                response = await provider.complete(messages, tools=ALL_TOOLS)
             except Exception as e:
                 logger.error("ToolAgent: provider call failed at turn %d: %s", turn + 1, e)
                 return AgentResult(

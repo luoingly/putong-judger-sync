@@ -10,6 +10,7 @@ from judger.models import (
     MemoryFile,
     PreparedFile,
     SandboxCmd,
+    SandboxStatus,
     Submission,
     Testcase,
 )
@@ -55,6 +56,14 @@ class ToolExecutor:
         result += f"- Memory Limit: {constraints.memoryLimit}KB\n"
         result += f"- Problem Type: {constraints.problemType.name}\n"
         result += f"\n## Language: {self.language.name}\n"
+
+        if self.problem.testcases:
+            result += "\n## Sample Test Cases\n"
+            for tc in self.problem.testcases:
+                result += f"\n### {tc.uuid}\n"
+                result += f"**Input:**\n```\n{tc.read_input()}```\n"
+                result += f"**Output:**\n```\n{tc.read_output()}```\n"
+
         return result
 
     async def _submit_code(self, args: dict[str, Any]) -> str:
@@ -93,10 +102,11 @@ class ToolExecutor:
                 copyOutCached=[lang_config.compiled_filename],
             )
             compile_result = (await self.sandbox.run_command([compile_cmd]))[0]
-            if compile_result.status.value != "Accepted":
-                return f"Compile Error:\n{compile_result.files.get('stderr', '')}"
+            if compile_result.status != SandboxStatus.Accepted:
+                stderr = (compile_result.files or {}).get("stderr", "")
+                return f"Compile Error:\n{stderr}"
 
-            compiled_id = compile_result.fileIds[lang_config.compiled_filename]
+            compiled_id = (compile_result.fileIds or {})[lang_config.compiled_filename]
             run_copy_in = {lang_config.compiled_filename: PreparedFile(compiled_id)}
         else:
             run_copy_in = {lang_config.source_filename: MemoryFile(code)}
@@ -115,8 +125,9 @@ class ToolExecutor:
         )
         run_result = (await self.sandbox.run_command([run_cmd]))[0]
 
-        stdout = run_result.files.get("stdout", "")
-        stderr = run_result.files.get("stderr", "")
+        files = run_result.files or {}
+        stdout = files.get("stdout", "")
+        stderr = files.get("stderr", "")
         lines = [
             f"Status: {run_result.status.value}",
             f"Time: {run_result.time // 1_000_000}ms | Memory: {run_result.memory // 1024}KB",

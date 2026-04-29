@@ -41,7 +41,7 @@ def parse_args():
         "--model",
         action="append",
         required=True,
-        help="Model name (from config/models.yaml). Can specify multiple times.",
+        help="Model name (from models config). Can specify multiple times.",
     )
     parser.add_argument(
         "--problem",

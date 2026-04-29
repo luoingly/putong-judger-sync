@@ -55,10 +55,7 @@ RUN_CODE = ToolDef(
 
 CHECK_TESTCASE = ToolDef(
     name="check_testcase",
-    description=(
-        "Run code against a specific test case and show "
-        "the expected vs actual output with diff information."
-    ),
+    description=("Run code against a specific test case and show the expected vs actual output."),
     parameters={
         "type": "object",
         "properties": {

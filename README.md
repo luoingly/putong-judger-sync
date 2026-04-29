@@ -26,6 +26,7 @@ models:
     api_key: "sk-..."
     temperature: 0.2
     max_tokens: 4096
+    thinking: true  # Enable thinking mode (for DeepSeek, etc.)
 ```
 
 ### Build and Run
@@ -51,8 +52,8 @@ uv run python run.py --model gpt-4o --model claude-sonnet --problem a-plus-b --l
 # Multiple problems
 uv run python run.py --model your-model --problem a-plus-b --problem two-sum --language cpp17
 
-# Tool agent (multi-turn with tool calling)
-uv run python run.py --model your-model --problem a-plus-b --language python --agent tool
+# With thinking mode enabled (for DeepSeek, etc.)
+uv run python run.py --model your-model --problem a-plus-b --language python --max-turns 15
 ```
 
 ### CLI Options
@@ -62,7 +63,6 @@ uv run python run.py --model your-model --problem a-plus-b --language python --a
 | `--model`        | Model name (from config), repeatable                 | required                |
 | `--problem`      | Problem ID, repeatable                               | required                |
 | `--language`     | `c` / `cpp11` / `cpp17` / `java` / `python` / `pypy` | required                |
-| `--agent`        | `simple` (single-turn) or `tool` (multi-turn)        | `simple`                |
 | `--sandbox`      | Sandbox endpoint                                     | `http://localhost:5050` |
 | `--max-turns`    | Max turns for tool agent                             | `10`                    |
 | `--config`       | Models config file                                   | `data/models.yaml`      |

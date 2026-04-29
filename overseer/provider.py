@@ -30,7 +30,7 @@ class ToolCallFunction:
 class ToolCall:
     id: str
     type: str = "function"
-    function: ToolCallFunction = field(default=None)
+    function: ToolCallFunction | None = field(default=None)
 
 
 @dataclass
@@ -48,11 +48,31 @@ class Usage:
     prompt_tokens_details: dict[str, int] | None = None
     completion_tokens_details: dict[str, int] | None = None
 
+    @staticmethod
+    def _merge_details(
+        left: dict[str, int] | None, right: dict[str, int] | None
+    ) -> dict[str, int] | None:
+        if left is None and right is None:
+            return None
+        merged: dict[str, int] = {}
+        for details in (left, right):
+            if details is None:
+                continue
+            for key, value in details.items():
+                merged[key] = merged.get(key, 0) + value
+        return merged
+
     def __add__(self, other: "Usage") -> "Usage":
         return Usage(
             prompt_tokens=self.prompt_tokens + other.prompt_tokens,
             completion_tokens=self.completion_tokens + other.completion_tokens,
             total_tokens=self.total_tokens + other.total_tokens,
+            prompt_tokens_details=self._merge_details(
+                self.prompt_tokens_details, other.prompt_tokens_details
+            ),
+            completion_tokens_details=self._merge_details(
+                self.completion_tokens_details, other.completion_tokens_details
+            ),
         )
 
 

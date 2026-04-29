@@ -26,7 +26,6 @@ class ProblemLoader:
             data = yaml.safe_load(f) or {}
 
         title = data.get("title", problem_id)
-        source = data.get("source", "")
 
         raw_constraints = data.get("constraints", {})
         problem_type_str = raw_constraints.get("problemType", "traditional")
@@ -54,7 +53,6 @@ class ProblemLoader:
         problem = Problem(
             id=problem_id,
             title=title,
-            source=source,
             constraints=constraints,
             testcases=testcases,
             problem_dir=problem_dir,

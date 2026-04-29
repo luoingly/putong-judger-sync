@@ -32,7 +32,6 @@ class TestCaseData:
 class Problem:
     id: str
     title: str
-    source: str = ""
     constraints: ProblemConstraints = field(
         default_factory=lambda: ProblemConstraints(timeLimit=1000, memoryLimit=32768)
     )

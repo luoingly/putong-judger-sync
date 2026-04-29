@@ -59,7 +59,7 @@ class Usage:
             if details is None:
                 continue
             for key, value in details.items():
-                merged[key] = merged.get(key, 0) + value
+                merged[key] = merged.get(key, 0) + (value or 0)
         return merged
 
     def __add__(self, other: "Usage") -> "Usage":

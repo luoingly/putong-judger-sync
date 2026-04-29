@@ -139,7 +139,7 @@ class ToolAgent:
             try:
                 response = await provider.complete(messages, tools=ALL_TOOLS)
             except Exception as e:
-                logger.error("ToolAgent: provider call failed at turn %d: %s", turn + 1, e)
+                logger.exception("ToolAgent: provider call failed at turn %d", turn + 1)
                 return AgentResult(
                     status=AgentStatus.Failed,
                     code=last_code,

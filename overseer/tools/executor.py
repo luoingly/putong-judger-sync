@@ -43,7 +43,7 @@ class ToolExecutor:
         try:
             return await handler(arguments)
         except Exception as e:
-            logger.error("Tool '%s' execution failed: %s", tool_name, e)
+            logger.exception("Tool '%s' execution failed", tool_name)
             return f"Error executing {tool_name}: {e}"
 
     async def _read_problem(self, args: dict[str, Any]) -> str:

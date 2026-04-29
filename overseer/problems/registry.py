@@ -21,8 +21,8 @@ class ProblemRegistry:
                 try:
                     problem = ProblemLoader.load(subdir)
                     self._problems[problem.id] = problem
-                except Exception as e:
-                    logger.error("Failed to load problem from %s: %s", subdir, e)
+                except Exception:
+                    logger.exception("Failed to load problem from %s", subdir)
 
         logger.info("Loaded %d problems from %s", len(self._problems), problems_dir)
 

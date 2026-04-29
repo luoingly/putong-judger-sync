@@ -215,7 +215,6 @@ async def async_main():
     recorder = Recorder()
 
     async with SandboxClient(args.sandbox) as sandbox_client:
-        tasks = []
         for model_name in args.model:
             if model_name not in model_configs:
                 available = list(model_configs.keys())
@@ -228,22 +227,17 @@ async def async_main():
             provider = AIProvider(config)
 
             for problem_id in args.problem:
-                tasks.append(
-                    run_one(
-                        model_name=model_name,
-                        problem_id=problem_id,
-                        language=language,
-                        language_name=args.language,
-                        max_turns=args.max_turns,
-                        provider=provider,
-                        sandbox_client=sandbox_client,
-                        problem_registry=problem_registry,
-                        recorder=recorder,
-                    )
+                await run_one(
+                    model_name=model_name,
+                    problem_id=problem_id,
+                    language=language,
+                    language_name=args.language,
+                    max_turns=args.max_turns,
+                    provider=provider,
+                    sandbox_client=sandbox_client,
+                    problem_registry=problem_registry,
+                    recorder=recorder,
                 )
-
-        for task in tasks:
-            await task
 
     recorder.save_run_summary()
     console.print(f"\n[bold]All done.[/bold] Results in: {recorder.output_dir}")

@@ -56,14 +56,6 @@ class ToolExecutor:
         result += f"- Memory Limit: {constraints.memoryLimit}KB\n"
         result += f"- Problem Type: {constraints.problemType.name}\n"
         result += f"\n## Language: {self.language.name}\n"
-
-        if self.problem.testcases:
-            result += "\n## Sample Test Cases\n"
-            for tc in self.problem.testcases:
-                result += f"\n### {tc.uuid}\n"
-                result += f"**Input:**\n```\n{tc.read_input()}```\n"
-                result += f"**Output:**\n```\n{tc.read_output()}```\n"
-
         return result
 
     async def _submit_code(self, args: dict[str, Any]) -> str:
@@ -93,6 +85,7 @@ class ToolExecutor:
 
         lang_config = LanguageRegistry.get_config(self.language)
         constraints = self.problem.constraints
+        compiled_id: str | None = None
 
         if lang_config.need_compile:
             compile_cmd = SandboxCmd(
@@ -125,6 +118,12 @@ class ToolExecutor:
             copyIn=run_copy_in,
         )
         run_result = (await self.sandbox.run_command([run_cmd]))[0]
+
+        if compiled_id:
+            try:
+                await self.sandbox.delete_file(compiled_id)
+            except Exception:
+                logger.debug("Failed to delete compiled file %s", compiled_id)
 
         files = run_result.files or {}
         stdout = files.get("stdout", "")

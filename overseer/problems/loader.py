@@ -25,19 +25,16 @@ class ProblemLoader:
         with open(yaml_path, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
 
-        title = data.get("title", problem_id)
-
-        raw_constraints = data.get("constraints", {})
-        problem_type_str = raw_constraints.get("problemType", "traditional")
+        problem_type_str = data.get("problemType", "traditional")
         problem_type = _parse_problem_type(problem_type_str)
 
         constraints = ProblemConstraints(
-            timeLimit=raw_constraints.get("timeLimit", 1000),
-            memoryLimit=raw_constraints.get("memoryLimit", 32768),
+            timeLimit=data.get("timeLimit", 1000),
+            memoryLimit=data.get("memoryLimit", 32768),
             problemType=problem_type,
         )
 
-        description_path = problem_dir / "description.md"
+        statement_path = problem_dir / "statement.md"
 
         addition_code_path: Path | None = None
         if problem_type in (ProblemType.Interaction, ProblemType.SpecialJudge):
@@ -52,11 +49,10 @@ class ProblemLoader:
 
         problem = Problem(
             id=problem_id,
-            title=title,
             constraints=constraints,
             testcases=testcases,
             problem_dir=problem_dir,
-            description_path=description_path if description_path.exists() else None,
+            statement_path=statement_path if statement_path.exists() else None,
             addition_code_path=addition_code_path,
         )
 

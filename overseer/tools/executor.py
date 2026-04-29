@@ -47,10 +47,9 @@ class ToolExecutor:
             return f"Error executing {tool_name}: {e}"
 
     async def _read_problem(self, args: dict[str, Any]) -> str:
-        desc = self.problem.read_description()
+        statement = self.problem.read_statement()
         constraints = self.problem.constraints
-        result = f"# {self.problem.title}\n\n"
-        result += desc
+        result = statement
         result += "\n\n## Constraints\n"
         result += f"- Time Limit: {constraints.timeLimit}ms\n"
         result += f"- Memory Limit: {constraints.memoryLimit}KB\n"

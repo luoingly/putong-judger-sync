@@ -1,5 +1,3 @@
-title: "A + B Problem"
-constraints:
-  timeLimit: 1000
-  memoryLimit: 32768
-  problemType: traditional
+timeLimit: 1000
+memoryLimit: 32768
+problemType: traditional

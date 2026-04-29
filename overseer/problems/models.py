@@ -31,18 +31,17 @@ class TestCaseData:
 @dataclass
 class Problem:
     id: str
-    title: str
     constraints: ProblemConstraints = field(
         default_factory=lambda: ProblemConstraints(timeLimit=1000, memoryLimit=32768)
     )
     testcases: list[TestCaseData] = field(default_factory=list)
     problem_dir: Path | None = None
-    description_path: Path | None = None
+    statement_path: Path | None = None
     addition_code_path: Path | None = None
 
-    def read_description(self) -> str:
-        if self.description_path and self.description_path.exists():
-            return self.description_path.read_text(encoding="utf-8")
+    def read_statement(self) -> str:
+        if self.statement_path and self.statement_path.exists():
+            return self.statement_path.read_text(encoding="utf-8")
         return ""
 
     def read_addition_code(self) -> str:

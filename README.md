@@ -75,7 +75,7 @@ Each problem is a directory under `data/problems/`:
 ```text
 data/problems/a-plus-b/
 ├── problem.yaml       # Constraints
-├── description.md     # Problem statement
+├── statement.md       # Problem statement
 ├── addition.cpp       # [Optional] For interaction/special-judge
 └── tests/
     ├── sample-1.in
@@ -86,12 +86,9 @@ data/problems/a-plus-b/
 **problem.yaml:**
 
 ```yaml
-title: "A + B Problem"
-source: "Example"
-constraints:
-  timeLimit: 1000       # ms
-  memoryLimit: 32768    # KB
-  problemType: traditional  # traditional / interaction / special-judge
+timeLimit: 1000       # ms
+memoryLimit: 32768    # KB
+problemType: traditional  # traditional / interaction / special-judge
 ```
 
 Test cases are auto-discovered by matching `*.in` / `*.out` pairs in `tests/`.

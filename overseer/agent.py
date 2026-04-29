@@ -127,7 +127,7 @@ class ToolAgent:
         system_prompt = SYSTEM_PROMPT.format(language=self.language_name)
         messages = [
             Message(role="system", content=system_prompt),
-            Message(role="user", content=f"Solve problem: {problem.id} ({problem.title})"),
+            Message(role="user", content=f"Solve problem: {problem.id}"),
         ]
         conversation = [_message_to_record(m) for m in messages]
 

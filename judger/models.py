@@ -1,14 +1,13 @@
-from enum import Enum
 from dataclasses import dataclass, field
-from typing import Union, Dict, Optional, List
+from enum import Enum
 
 from .config import (
-    DEFAULT_TIME_LIMIT,
-    DEFAULT_MEMORY_LIMIT,
-    DEFAULT_PROC_LIMIT,
     DEFAULT_CPU_RATE_LIMIT,
+    DEFAULT_MEMORY_LIMIT,
     DEFAULT_OUTPUT_LIMIT,
-    DEFAULT_SANDBOX_ENV
+    DEFAULT_PROC_LIMIT,
+    DEFAULT_SANDBOX_ENV,
+    DEFAULT_TIME_LIMIT,
 )
 
 
@@ -89,10 +88,10 @@ class Collector:
 
 @dataclass
 class SandboxCmd:
-    args: List[str]
-    env: List[str] = field(default_factory=lambda: DEFAULT_SANDBOX_ENV.copy())
+    args: list[str]
+    env: list[str] = field(default_factory=lambda: DEFAULT_SANDBOX_ENV.copy())
 
-    files: List[Union[LocalFile, MemoryFile, PreparedFile, Collector, None]] = \
+    files: list[LocalFile | MemoryFile | PreparedFile | Collector | None] = \
         field(default_factory=list)
 
     cpuLimit: int = field(default=DEFAULT_TIME_LIMIT)
@@ -101,28 +100,28 @@ class SandboxCmd:
     procLimit: int = field(default=DEFAULT_PROC_LIMIT)
     cpuRateLimit: int = field(default=DEFAULT_CPU_RATE_LIMIT)
 
-    copyIn: Dict[str, Union[LocalFile, MemoryFile, PreparedFile]] = \
+    copyIn: dict[str, LocalFile | MemoryFile | PreparedFile] = \
         field(default_factory=dict)
 
-    copyOut: List[str] = field(default_factory=list)
-    copyOutCached: List[str] = field(default_factory=list)
+    copyOut: list[str] = field(default_factory=list)
+    copyOutCached: list[str] = field(default_factory=list)
     copyOutMax: int = field(default=DEFAULT_OUTPUT_LIMIT)
 
 
 @dataclass
 class SandboxResult:
     status: SandboxStatus = field(default=SandboxStatus.InternalError)
-    error: Optional[str] = field(default=None)
+    error: str | None = field(default=None)
     exitStatus: int = field(default=0)
 
     time: int = field(default=0)
     memory: int = field(default=0)
-    procPeak: Optional[int] = field(default=None)
+    procPeak: int | None = field(default=None)
     runTime: int = field(default=0)
 
-    files: Optional[Dict[str, str]] = field(default=None)
-    fileIds: Optional[Dict[str, str]] = field(default=None)
-    fileError: Optional[List[str]] = field(default=None)
+    files: dict[str, str] | None = field(default=None)
+    fileIds: dict[str, str] | None = field(default=None)
+    fileError: list[str] | None = field(default=None)
 
     def __post_init__(self):
         if not isinstance(self.status, SandboxStatus):
@@ -132,13 +131,13 @@ class SandboxResult:
 @dataclass
 class Testcase:
     uuid: str
-    input: Union[LocalFile, MemoryFile, PreparedFile]
-    output: Union[LocalFile, MemoryFile, PreparedFile]
+    input: LocalFile | MemoryFile | PreparedFile
+    output: LocalFile | MemoryFile | PreparedFile
 
-    def _prase_file(
+    def _parse_file(
         self,
-        raw: Dict[str, str]
-    ) -> Union[LocalFile, MemoryFile, PreparedFile]:
+        raw: dict[str, str]
+    ) -> LocalFile | MemoryFile | PreparedFile:
         if 'src' in raw:
             return LocalFile(raw['src'])
         elif 'fileId' in raw:
@@ -150,9 +149,9 @@ class Testcase:
 
     def __post_init__(self):
         if not isinstance(self.input, (LocalFile, MemoryFile, PreparedFile)):
-            self.input = self._prase_file(self.input)
+            self.input = self._parse_file(self.input)
         if not isinstance(self.output, (LocalFile, MemoryFile, PreparedFile)):
-            self.output = self._prase_file(self.output)
+            self.output = self._parse_file(self.output)
 
 
 @dataclass
@@ -160,11 +159,11 @@ class Submission:
     sid: int
     timeLimit: int
     memoryLimit: int
-    testcases: List[Testcase]
+    testcases: list[Testcase]
     language: Language
     code: str
     type: ProblemType = field(default=ProblemType.Traditional)
-    additionCode: Optional[str] = ""
+    additionCode: str | None = ""
 
     def __post_init__(self):
         if not isinstance(self.language, Language):
@@ -187,6 +186,6 @@ class SubmissionResult:
     sid: int
     time: int = field(default=0)
     memory: int = field(default=0)
-    testcases: List[TestcaseResult] = field(default_factory=list)
+    testcases: list[TestcaseResult] = field(default_factory=list)
     judge: JudgeStatus = field(default=JudgeStatus.Pending)
     error: str = field(default='')

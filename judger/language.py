@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List, Dict
 
 from .models import Language
 
@@ -9,14 +8,14 @@ class LanguageConfig:
     source_filename: str
     compiled_filename: str
     need_compile: bool
-    compile_cmd: List[str]
-    run_cmd: List[str]
+    compile_cmd: list[str]
+    run_cmd: list[str]
     time_factor: int = field(default=1)
     memory_factor: int = field(default=1)
 
 
 class LanguageRegistry:
-    _mapping: Dict[Language, LanguageConfig] = {}
+    _mapping: dict[Language, LanguageConfig] = {}
 
     @classmethod
     def register(cls, lang: Language, config: LanguageConfig) -> None:

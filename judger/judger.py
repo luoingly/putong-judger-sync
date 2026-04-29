@@ -1,23 +1,22 @@
 import asyncio
 import logging
-from typing import List, Optional, Set
 
+from .checker import DefaultChecker, TestlibChecker
 from .client import SandboxClient
-from .checker import TestlibChecker, DefaultChecker
 from .config import LOGGER_NAME
 from .language import LanguageRegistry
 from .models import (
+    Collector,
     JudgeStatus,
-    SandboxStatus,
-    ProblemType,
     MemoryFile,
     PreparedFile,
-    Collector,
+    ProblemType,
     SandboxCmd,
-    Testcase,
+    SandboxStatus,
     Submission,
+    SubmissionResult,
+    Testcase,
     TestcaseResult,
-    SubmissionResult
 )
 
 logger = logging.getLogger(f"{LOGGER_NAME}.judger")
@@ -25,7 +24,7 @@ logger = logging.getLogger(f"{LOGGER_NAME}.judger")
 
 class Judger:
 
-    STATUS_PRIORITY: List[JudgeStatus] = [
+    STATUS_PRIORITY: list[JudgeStatus] = [
         JudgeStatus.SystemError,
         JudgeStatus.OutputLimitExceeded,
         JudgeStatus.MemoryLimitExceeded,
@@ -43,7 +42,7 @@ class Judger:
         SandboxStatus.Signalled: JudgeStatus.RuntimeError
     }
 
-    SKIP_STATUS: Set[JudgeStatus] = {
+    SKIP_STATUS: set[JudgeStatus] = {
         JudgeStatus.MemoryLimitExceeded,
         JudgeStatus.TimeLimitExceeded,
         JudgeStatus.OutputLimitExceeded
@@ -66,14 +65,14 @@ class Judger:
             judge=JudgeStatus.Pending
         )
 
-        self.compiled_file: Optional[PreparedFile] = None
-        self.cleanup_tasks: List[asyncio.Task] = list()
+        self.compiled_file: PreparedFile | None = None
+        self.cleanup_tasks: list[asyncio.Task] = list()
 
         try:
             self.language = LanguageRegistry.get_config(
                 self.submission.language
             )
-        except ValueError as e:
+        except ValueError:
             self.result.judge = JudgeStatus.SystemError
             logger.error(
                 "Submission %d failed on initialization: "

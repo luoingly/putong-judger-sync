@@ -1,12 +1,13 @@
-import aiohttp
 import asyncio
 import logging
-from aiohttp import FormData
 from dataclasses import asdict
-from typing import Optional, List, Dict, Any
+from typing import Any
+
+import aiohttp
+from aiohttp import FormData
 
 from .config import LOGGER_NAME
-from .models import SandboxCmd, SandboxResult, PreparedFile
+from .models import PreparedFile, SandboxCmd, SandboxResult
 
 logger = logging.getLogger(f"{LOGGER_NAME}.client")
 
@@ -21,10 +22,10 @@ class FileCache:
         self.client = client
         self.expire = expire
         self.recycle_gap = recycle_gap
-        self.files: Dict[str, PreparedFile] = {}
-        self.last_access: Dict[str, float] = {}
-        self.recycle_task: Optional[asyncio.Task[None]] = None
-        self.cleanup_tasks: List[asyncio.Task[None]] = []
+        self.files: dict[str, PreparedFile] = {}
+        self.last_access: dict[str, float] = {}
+        self.recycle_task: asyncio.Task[None] | None = None
+        self.cleanup_tasks: list[asyncio.Task[None]] = []
         self._lock = asyncio.Lock()
         self._closed = False
 
@@ -98,7 +99,7 @@ class FileCache:
             logger.debug("Recycle task cancelled")
             raise
 
-    async def get(self, identifier: str) -> Optional[PreparedFile]:
+    async def get(self, identifier: str) -> PreparedFile | None:
         async with self._lock:
             file = self.files.get(identifier)
 
@@ -153,9 +154,9 @@ class SandboxClient:
 
     async def run_command(
         self,
-        commands: List[SandboxCmd],
-        pipeMapping: Optional[List[Dict]] = None
-    ) -> List[SandboxResult]:
+        commands: list[SandboxCmd],
+        pipeMapping: list[dict] | None = None
+    ) -> list[SandboxResult]:
         url = f'{self.endpoint}/run'
         payload = {"cmd": [asdict(c) for c in commands]}
         if pipeMapping:
@@ -184,7 +185,7 @@ class SandboxClient:
             logger.debug("Received upload results: '%s'", result)
             return PreparedFile(result)
 
-    async def download_file(self, file_id: str) -> Optional[str]:
+    async def download_file(self, file_id: str) -> str | None:
         url = f'{self.endpoint}/file/{file_id}'
         logger.debug("Downloading file: '%s'", file_id)
 
@@ -218,7 +219,7 @@ class SandboxClient:
                 )
                 return False
 
-    async def get_version(self) -> Dict[str, Any]:
+    async def get_version(self) -> dict[str, Any]:
         url = f'{self.endpoint}/version'
         logger.debug("Getting version")
 

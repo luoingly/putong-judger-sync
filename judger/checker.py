@@ -1,18 +1,17 @@
 import logging
 from hashlib import sha256
 from pathlib import Path
-from typing import List, Optional, Union
 
 from .client import SandboxClient
 from .config import DEFAULT_CHECKER, LOGGER_NAME, TESTLIB_PATH
 from .models import (
+    Collector,
     JudgeStatus,
-    SandboxStatus,
     LocalFile,
     MemoryFile,
     PreparedFile,
-    Collector,
     SandboxCmd,
+    SandboxStatus,
 )
 
 logger = logging.getLogger(f"{LOGGER_NAME}.checker")
@@ -22,11 +21,11 @@ class TestlibChecker:
 
     SOURCE_FILENAME: str = "Checker.cpp"
     COMPILED_FILENAME: str = "Checker"
-    COMPILE_CMD: List[str] = [
+    COMPILE_CMD: list[str] = [
         "/usr/bin/g++-12", "Checker.cpp", "-o", "Checker",
         "-std=c++17", "-O2", "-lm", "-w", "-fmax-errors=3", "--static"
     ]
-    RUN_CMD: List[str] = [
+    RUN_CMD: list[str] = [
         "./Checker", "infile", "outfile", "ansfile"
     ]
 
@@ -37,7 +36,7 @@ class TestlibChecker:
     ) -> None:
         self.client = client
         self.code = code
-        self.compiled_file: Optional[PreparedFile] = None
+        self.compiled_file: PreparedFile | None = None
 
         logger.debug("Testlib checker initialized")
 
@@ -64,7 +63,7 @@ class TestlibChecker:
                     "Testlib header file not found: %s" %
                     TESTLIB_PATH
                 )
-            with open(TESTLIB_PATH, 'rt', encoding='utf-8') as f:
+            with open(TESTLIB_PATH, encoding='utf-8') as f:
                 testlib_code = f.read()
 
             testlib_file = await self.client.upload_file(
@@ -102,9 +101,9 @@ class TestlibChecker:
 
     async def check(
         self,
-        input_file: Union[LocalFile, MemoryFile, PreparedFile],
-        answer_file: Union[LocalFile, MemoryFile, PreparedFile],
-        output_file: Union[LocalFile, MemoryFile, PreparedFile]
+        input_file: LocalFile | MemoryFile | PreparedFile,
+        answer_file: LocalFile | MemoryFile | PreparedFile,
+        output_file: LocalFile | MemoryFile | PreparedFile
     ) -> JudgeStatus:
         logger.debug(
             "Checking with 'infile': %s, 'outfile': %s, 'ansfile': %s",
@@ -148,20 +147,20 @@ class TestlibChecker:
 
 class DefaultChecker(TestlibChecker):
 
-    RUN_CMD: List[str] = [
+    RUN_CMD: list[str] = [
         "./Checker", "tc.in", 'tc.out', 'user.out'
     ]
 
     def __init__(
         self,
         client: SandboxClient,
-        code_file: Union[str, Path] = DEFAULT_CHECKER
+        code_file: str | Path = DEFAULT_CHECKER
     ) -> None:
         self.client = client
-        self.compiled_file: Optional[PreparedFile] = None
+        self.compiled_file: PreparedFile | None = None
 
         try:
-            with open(code_file, 'rt', encoding='utf-8') as f:
+            with open(code_file, encoding='utf-8') as f:
                 self.code = f.read()
         except FileNotFoundError as e:
             raise FileNotFoundError(
@@ -176,9 +175,9 @@ class DefaultChecker(TestlibChecker):
 
     async def check(
         self,
-        input_file: Union[LocalFile, MemoryFile, PreparedFile],
-        output_file: Union[LocalFile, MemoryFile, PreparedFile],
-        user_file: Union[LocalFile, MemoryFile, PreparedFile]
+        input_file: LocalFile | MemoryFile | PreparedFile,
+        output_file: LocalFile | MemoryFile | PreparedFile,
+        user_file: LocalFile | MemoryFile | PreparedFile
     ) -> JudgeStatus:
         logger.debug(
             "Checking with 'tc.in': %s, 'tc.out': %s, 'user.out': %s",

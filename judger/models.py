@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, StrEnum
 
 from .config import (
     DEFAULT_CPU_RATE_LIMIT,
@@ -30,15 +30,15 @@ class JudgeStatus(int, Enum):
         return f"{self.__class__.__name__}.{self.name}"
 
 
-class SandboxStatus(str, Enum):
-    Accepted = 'Accepted'
-    MemoryLimitExceeded = 'Memory Limit Exceeded'
-    TimeLimitExceeded = 'Time Limit Exceeded'
-    OutputLimitExceeded = 'Output Limit Exceeded'
-    FileError = 'File Error'
-    NonzeroExitStatus = 'Nonzero Exit Status'
-    Signalled = 'Signalled'
-    InternalError = 'Internal Error'
+class SandboxStatus(StrEnum):
+    Accepted = "Accepted"
+    MemoryLimitExceeded = "Memory Limit Exceeded"
+    TimeLimitExceeded = "Time Limit Exceeded"
+    OutputLimitExceeded = "Output Limit Exceeded"
+    FileError = "File Error"
+    NonzeroExitStatus = "Nonzero Exit Status"
+    Signalled = "Signalled"
+    InternalError = "Internal Error"
 
     def __repr__(self):
         return f"{self.__class__.__name__}.{self.name}"
@@ -91,17 +91,17 @@ class SandboxCmd:
     args: list[str]
     env: list[str] = field(default_factory=lambda: DEFAULT_SANDBOX_ENV.copy())
 
-    files: list[LocalFile | MemoryFile | PreparedFile | Collector | None] = \
-        field(default_factory=list)
+    files: list[LocalFile | MemoryFile | PreparedFile | Collector | None] = field(
+        default_factory=list
+    )
 
     cpuLimit: int = field(default=DEFAULT_TIME_LIMIT)
-    clockLimit: int = field(default=DEFAULT_TIME_LIMIT*2)
+    clockLimit: int = field(default=DEFAULT_TIME_LIMIT * 2)
     memoryLimit: int = field(default=DEFAULT_MEMORY_LIMIT)
     procLimit: int = field(default=DEFAULT_PROC_LIMIT)
     cpuRateLimit: int = field(default=DEFAULT_CPU_RATE_LIMIT)
 
-    copyIn: dict[str, LocalFile | MemoryFile | PreparedFile] = \
-        field(default_factory=dict)
+    copyIn: dict[str, LocalFile | MemoryFile | PreparedFile] = field(default_factory=dict)
 
     copyOut: list[str] = field(default_factory=list)
     copyOutCached: list[str] = field(default_factory=list)
@@ -134,18 +134,15 @@ class Testcase:
     input: LocalFile | MemoryFile | PreparedFile
     output: LocalFile | MemoryFile | PreparedFile
 
-    def _parse_file(
-        self,
-        raw: dict[str, str]
-    ) -> LocalFile | MemoryFile | PreparedFile:
-        if 'src' in raw:
-            return LocalFile(raw['src'])
-        elif 'fileId' in raw:
-            return PreparedFile(raw['fileId'])
-        elif 'content' in raw:
-            return MemoryFile(raw['content'])
+    def _parse_file(self, raw: dict[str, str]) -> LocalFile | MemoryFile | PreparedFile:
+        if "src" in raw:
+            return LocalFile(raw["src"])
+        elif "fileId" in raw:
+            return PreparedFile(raw["fileId"])
+        elif "content" in raw:
+            return MemoryFile(raw["content"])
         else:
-            raise ValueError("Invalid input %s" % raw)
+            raise ValueError(f"Invalid input {raw}")
 
     def __post_init__(self):
         if not isinstance(self.input, (LocalFile, MemoryFile, PreparedFile)):
@@ -163,7 +160,7 @@ class Submission:
     language: Language
     code: str
     type: ProblemType = field(default=ProblemType.Traditional)
-    additionCode: str | None = ""
+    additionCode: str = ""
 
     def __post_init__(self):
         if not isinstance(self.language, Language):
@@ -188,4 +185,4 @@ class SubmissionResult:
     memory: int = field(default=0)
     testcases: list[TestcaseResult] = field(default_factory=list)
     judge: JudgeStatus = field(default=JudgeStatus.Pending)
-    error: str = field(default='')
+    error: str = field(default="")

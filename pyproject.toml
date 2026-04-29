@@ -22,7 +22,6 @@ packages = ["judger", "overseer"]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-exclude = ["judger"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP"]

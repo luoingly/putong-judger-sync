@@ -14,10 +14,7 @@ logger = logging.getLogger(f"{LOGGER_NAME}.client")
 
 class FileCache:
     def __init__(
-        self,
-        client: 'SandboxClient',
-        expire: float = 60 * 60,
-        recycle_gap: float = 60
+        self, client: "SandboxClient", expire: float = 60 * 60, recycle_gap: float = 60
     ) -> None:
         self.client = client
         self.expire = expire
@@ -29,12 +26,9 @@ class FileCache:
         self._lock = asyncio.Lock()
         self._closed = False
 
-        logger.debug(
-            "File cache initialized with expire=%s, recycle_gap=%s",
-            expire, recycle_gap
-        )
+        logger.debug("File cache initialized with expire=%s, recycle_gap=%s", expire, recycle_gap)
 
-    async def __aenter__(self) -> 'FileCache':
+    async def __aenter__(self) -> "FileCache":
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -55,9 +49,7 @@ class FileCache:
         async with self._lock:
             for identifier, file in self.files.items():
                 logger.debug("Cleaning up file '%s' on close", identifier)
-                self.cleanup_tasks.append(
-                    asyncio.create_task(self.client.delete_file(file.fileId))
-                )
+                self.cleanup_tasks.append(asyncio.create_task(self.client.delete_file(file.fileId)))
             if self.cleanup_tasks:
                 await asyncio.gather(*self.cleanup_tasks)
 
@@ -80,9 +72,7 @@ class FileCache:
 
             for identifier, file_id in to_delete:
                 logger.debug("Recycling expired file '%s'", identifier)
-                self.cleanup_tasks.append(
-                    asyncio.create_task(self.client.delete_file(file_id))
-                )
+                self.cleanup_tasks.append(asyncio.create_task(self.client.delete_file(file_id)))
                 self.files.pop(identifier, None)
                 self.last_access.pop(identifier, None)
 
@@ -113,12 +103,9 @@ class FileCache:
     async def set(self, identifier: str, file: PreparedFile) -> None:
         async with self._lock:
             if identifier in self.files:
-                logger.debug(
-                    "Updating existing file '%s' in cache", identifier)
+                logger.debug("Updating existing file '%s' in cache", identifier)
                 self.cleanup_tasks.append(
-                    asyncio.create_task(
-                        self.client.delete_file(self.files[identifier].fileId)
-                    )
+                    asyncio.create_task(self.client.delete_file(self.files[identifier].fileId))
                 )
             else:
                 logger.debug("Adding new file '%s' to cache", identifier)
@@ -133,7 +120,7 @@ class FileCache:
 
 class SandboxClient:
     def __init__(self, endpoint: str) -> None:
-        self.endpoint = endpoint.strip('/')
+        self.endpoint = endpoint.strip("/")
         self.session = aiohttp.ClientSession()
         self.cache = FileCache(client=self)
         logger.debug("Sandbox client initialized with: %s", self.endpoint)
@@ -141,7 +128,7 @@ class SandboxClient:
     def __repr__(self) -> str:
         return f"SandboxClient(endpoint='{self.endpoint}')"
 
-    async def __aenter__(self) -> 'SandboxClient':
+    async def __aenter__(self) -> "SandboxClient":
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -153,11 +140,9 @@ class SandboxClient:
         logger.debug("Sandbox client closed")
 
     async def run_command(
-        self,
-        commands: list[SandboxCmd],
-        pipeMapping: list[dict] | None = None
+        self, commands: list[SandboxCmd], pipeMapping: list[dict] | None = None
     ) -> list[SandboxResult]:
-        url = f'{self.endpoint}/run'
+        url = f"{self.endpoint}/run"
         payload = {"cmd": [asdict(c) for c in commands]}
         if pipeMapping:
             payload["pipeMapping"] = pipeMapping
@@ -169,14 +154,10 @@ class SandboxClient:
             logger.debug("Received run results: %s", results)
             return [SandboxResult(**result) for result in results]
 
-    async def upload_file(
-        self,
-        content: str,
-        filename: str = 'file.txt'
-    ) -> PreparedFile:
-        url = f'{self.endpoint}/file'
+    async def upload_file(self, content: str, filename: str = "file.txt") -> PreparedFile:
+        url = f"{self.endpoint}/file"
         data = FormData()
-        data.add_field('file', content, filename=filename)
+        data.add_field("file", content, filename=filename)
         logger.debug("Uploading file with %d bytes", len(content))
 
         async with self.session.post(url, data=data) as resp:
@@ -186,26 +167,22 @@ class SandboxClient:
             return PreparedFile(result)
 
     async def download_file(self, file_id: str) -> str | None:
-        url = f'{self.endpoint}/file/{file_id}'
+        url = f"{self.endpoint}/file/{file_id}"
         logger.debug("Downloading file: '%s'", file_id)
 
         async with self.session.get(url) as resp:
             result = await resp.text()
             if resp.status == 200:
-                logger.debug(
-                    "Received file '%s' with %d bytes",
-                    file_id, len(result)
-                )
+                logger.debug("Received file '%s' with %d bytes", file_id, len(result))
                 return result
             else:
                 logger.warning(
-                    "Failed to download file '%s': %d %s",
-                    file_id, resp.status, await resp.text()
+                    "Failed to download file '%s': %d %s", file_id, resp.status, await resp.text()
                 )
                 return None
 
     async def delete_file(self, file_id: str) -> bool:
-        url = f'{self.endpoint}/file/{file_id}'
+        url = f"{self.endpoint}/file/{file_id}"
         logger.debug("Deleting file '%s'", file_id)
 
         async with self.session.delete(url) as resp:
@@ -214,13 +191,12 @@ class SandboxClient:
                 return True
             else:
                 logger.warning(
-                    "Failed to delete file '%s': %d %s",
-                    file_id, resp.status, await resp.text()
+                    "Failed to delete file '%s': %d %s", file_id, resp.status, await resp.text()
                 )
                 return False
 
     async def get_version(self) -> dict[str, Any]:
-        url = f'{self.endpoint}/version'
+        url = f"{self.endpoint}/version"
         logger.debug("Getting version")
 
         async with self.session.get(url) as resp:

@@ -35,7 +35,6 @@ class ToolExecutor:
             "read_problem": self._read_problem,
             "submit_code": self._submit_code,
             "run_code": self._run_code,
-            "check_testcase": self._check_testcase,
         }
         handler = handlers.get(tool_name)
         if not handler:
@@ -136,24 +135,6 @@ class ToolExecutor:
         if stderr:
             lines.append(f"\n--- stderr ---\n{stderr}")
         return "\n".join(lines)
-
-    async def _check_testcase(self, args: dict[str, Any]) -> str:
-        code = args.get("code", "")
-        testcase_name = args.get("testcase_name", "")
-        if not code:
-            return "Error: No code provided"
-        if not testcase_name:
-            return "Error: No testcase name provided"
-
-        try:
-            input_data = self.problem.read_test_input(testcase_name)
-            expected = self.problem.read_test_output(testcase_name)
-        except ValueError as e:
-            return f"Error: {e}"
-
-        run_result = await self._run_code({"code": code, "input": input_data})
-
-        return f"{run_result}\n\n--- Expected Output ---\n{expected}"
 
 
 def build_submission(problem: Problem, code: str, language: Language) -> Submission:

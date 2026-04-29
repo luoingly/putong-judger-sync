@@ -2,7 +2,7 @@ from overseer.provider import ToolDef
 
 READ_PROBLEM = ToolDef(
     name="read_problem",
-    description=("Read the full problem description and constraints for the current problem."),
+    description="Read the full problem statement and constraints.",
     parameters={
         "type": "object",
         "properties": {},
@@ -50,23 +50,4 @@ RUN_CODE = ToolDef(
     },
 )
 
-CHECK_TESTCASE = ToolDef(
-    name="check_testcase",
-    description=("Run code against a specific test case and show the expected vs actual output."),
-    parameters={
-        "type": "object",
-        "properties": {
-            "code": {
-                "type": "string",
-                "description": "The source code to run",
-            },
-            "testcase_name": {
-                "type": "string",
-                "description": "The test case name (uuid) to check against",
-            },
-        },
-        "required": ["code", "testcase_name"],
-    },
-)
-
-ALL_TOOLS = [READ_PROBLEM, SUBMIT_CODE, RUN_CODE, CHECK_TESTCASE]
+ALL_TOOLS = [READ_PROBLEM, SUBMIT_CODE, RUN_CODE]

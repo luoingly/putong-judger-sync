@@ -213,12 +213,10 @@ class AIProvider:
             "messages": openai_messages,
             "temperature": self.config.temperature,
             "max_tokens": self.config.max_tokens,
+            "extra_body": {"thinking": {"type": "enabled" if self.config.thinking else "disabled"}},
         }
         if tools:
             kwargs["tools"] = [_tooldef_to_openai(t) for t in tools]
-
-        if self.config.thinking:
-            kwargs["extra_body"] = {"thinking": {"type": "enabled"}}
 
         logger.debug(
             "Sending request to %s (model=%s, messages=%d)",

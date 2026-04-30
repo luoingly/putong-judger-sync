@@ -23,7 +23,7 @@ console = Console()
 DEFAULT_SANDBOX = "http://localhost:5050"
 DEFAULT_PROBLEMS_DIR = "data/problems"
 DEFAULT_CONFIG = "data/models.yaml"
-DEFAULT_MAX_TURNS = 10
+DEFAULT_MAX_TURNS = 100
 
 LANGUAGE_MAP = {
     "c": Language.C,

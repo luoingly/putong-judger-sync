@@ -248,6 +248,16 @@ class ToolAgent:
 
                 if tc.function.name == "submit_code" and "code" in args:
                     last_code = args["code"]
+                    if "评测结果：Accepted" in result_str:
+                        logger.info("ToolAgent: Accepted, stopping early")
+                        return AgentResult(
+                            status=AgentStatus.Completed,
+                            code=last_code,
+                            language=self.language_name,
+                            token_usage=total_usage,
+                            turn_count=turn + 1,
+                            conversation=conversation,
+                        )
 
         final_code = last_code
         if not final_code and response and response.content:
